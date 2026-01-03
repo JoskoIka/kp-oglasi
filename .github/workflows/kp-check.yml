@@ -1,49 +1,15 @@
 name: KP - check ads (Telegram)
 
-# trigger samo preko repository_dispatch tipa koji salje Cloudflare Worker
 on:
   repository_dispatch:
     types: [kp_check]
 
-# concurrency: ako se pojavi novi dispatch, otkaži prethodni job koji je još u toku
-concurrency:
-  group: kp-check-${{ github.repository }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-  actions: read
-
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Debug: show event info
-        # ovo ispisuje event payload poslat od Workera u workflow log (korisno za debag)
-        run: |
-          echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
-          echo "GITHUB_EVENT_PATH=$GITHUB_EVENT_PATH"
-          if [ -f "$GITHUB_EVENT_PATH" ]; then
-            echo "---- EVENT PAYLOAD (first 4k) ----"
-            head -c 4000 "$GITHUB_EVENT_PATH" || true
-            echo ""
-            echo "----------------------------------"
-          else
-            echo "No event payload file found."
-          fi
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -59,9 +25,4 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # opcionalno: ako skripta treba GH token za nesto lokalno
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo "Starting KP checker at $(date -u)"
-          python kp_check_and_notify_telegram.py
-          echo "Finished KP checker at $(date -u)"
+        run: python kp_check_and_notify_telegram.py
