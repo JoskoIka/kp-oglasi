@@ -11,7 +11,7 @@ OUT_FILE = "neobnovljeni_dijagonale_direct.txt"
 SEPARATOR = "-" * 40
 
 # tražene dijagonale
-SIZES = ["40","42","43","48","49","50","55"]
+SIZES = ["40","42","43","46","47","48","49","50","55","60","4K","ultra hd","uhd","3840 x 2160"]
 SIZE_RE = re.compile(r"(?<!\d)(" + "|".join(SIZES) + r")(?!\d)")
 
 # Telegram iz env (u Actions staviš u Secrets)
@@ -195,3 +195,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
