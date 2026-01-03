@@ -1,198 +1,253 @@
 # kp_check_and_notify_telegram.py
+import os, re, json, sys, subprocess
+from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
-import re, os, sys, time
-from typing import List
+from time import sleep
 
-# ---------------- CONFIG ----------------
-URL = "https://www.kupujemprodajem.com/pretraga?categoryId=1054&groupId=640&priceFrom=70&priceTo=180&currency=eur&condition=used,as-new,new&ignoreUserId=no&order=posted+desc"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
-OUT_FILE = "neobnovljeni_dijagonale_direct.txt"
-SEPARATOR = "-" * 40
+# ------------- CONFIG -------------
+URLS = [
+    "https://www.kupujemprodajem.com/tv-i-video/tv-lcd-plazma-led/pretraga?categoryId=1054&groupId=640&priceFrom=70&priceTo=180&currency=eur&condition=used&condition=as-new&condition=new&ignoreUserId=no&order=posted%20desc&page=1"
+    # dodaj ostale search linkove ovde
+]
 
-# tražene dijagonale
+# Tražene dimenzije / ključevi (user-provided)
 SIZES = ["40","42","43","46","47","48","49","50","55","60","4K","ultra hd","uhd","3840 x 2160"]
-SIZE_RE = re.compile(r"(?<!\d)(" + "|".join(SIZES) + r")(?!\d)")
+# Normalize for search
+SIZES_LOWER = [s.lower() for s in SIZES]
 
-# Telegram iz env (u Actions staviš u Secrets)
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
-# ----------------------------------------
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36"
 
-def find_status_div(section):
-    for div in section.find_all("div"):
-        cls = div.get("class") or []
-        for c in cls:
-            if c.startswith("AdItem_postedStatus__"):
-                return div
-    return None
+# Folders and file name templates
+DATA_DIR = ".kp_data"
+os.makedirs(DATA_DIR, exist_ok=True)
 
-def extract_title(section):
-    name_div = section.find(lambda tag: tag.name=="div" and tag.get("class") and any(c.startswith("AdItem_name__") for c in tag.get("class")))
-    if name_div and name_div.get_text(strip=True):
-        return name_div.get_text(strip=True)
-    a = section.find("a", attrs={"aria-label": True, "href": True})
-    if a:
-        return (a.get("aria-label") or a.get_text(strip=True)).strip()
-    a2 = section.find("a", href=True)
-    if a2:
-        return (a2.get_text(strip=True) or a2.get("aria-label") or "").strip()
-    txt = (section.get_text(separator=" ", strip=True) or "")
-    return txt.split("\n")[0].strip()
+# Telegram
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-def extract_description(section):
-    desc_holder = section.find(lambda tag: tag.name=="div" and tag.get("class") and any(c.startswith("AdItem_descriptionHolder__") for c in tag.get("class")))
-    if not desc_holder:
-        return ""
-    p_tags = desc_holder.find_all("p")
-    best = ""
-    for p in p_tags:
-        text = p.get_text(" ", strip=True)
-        if len(text) <= 3:
-            continue
-        if len(text) > len(best):
-            best = text
-    return " ".join(best.split())
+# ------------- HELPERS -------------
+def slug_from_url(u):
+    p = urlparse(u)
+    slug = (p.path + "_" + (p.query or "")).replace('/', '_').replace('&','_').replace('=','_')
+    slug = re.sub(r'[^0-9a-zA-Z_\-\.]', '', slug)
+    return slug[:120]
 
-def extract_price(section):
-    price_div = section.find(lambda tag: tag.name=="div" and tag.get("class") and any("AdItem_price__" in c or "AdItem_priceHolder__" in c or "AdItem_adPrice__" in c for c in tag.get("class")))
-    if price_div:
-        text = price_div.get_text(" ", strip=True)
-        return " ".join(text.split())
-    ph = section.find("div", class_=re.compile(r"AdItem_priceHolder__|AdItem_adPrice__|AdItem_price__"))
-    if ph:
-        return ph.get_text(" ", strip=True)
-    return ""
-
-def extract_link(section):
-    a = section.find("a", href=True)
-    if not a:
-        return ""
-    href = a.get("href") or ""
-    return href if href.startswith("http") else "https://www.kupujemprodajem.com" + href
-
-def parse_current():
-    r = requests.get(URL, headers=HEADERS, timeout=15)
+def fetch_html(url):
+    headers = {"User-Agent": USER_AGENT}
+    r = requests.get(url, headers=headers, timeout=30)
     r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
-    sections = soup.find_all("section", id=True)
+    return r.text
 
-    results = []
+def parse_ads_from_html(html, base_url="https://www.kupujemprodajem.com"):
+    soup = BeautifulSoup(html, "html.parser")
+    ads = []
+    # select sections with outer holder (class name contains AdItem_adOuterHolder__)
+    sections = soup.select('section[class*="AdItem_adOuterHolder"]')
     for sec in sections:
-        title = extract_title(sec)
-        if not title:
+        try:
+            # id or link
+            section_id = sec.get('id') or ""
+            a = sec.select_one('a[href]')
+            href = a['href'] if a else ""
+            link = urljoin(base_url, href) if href else ""
+            title_tag = sec.select_one('.AdItem_name__iOZvA')
+            title = title_tag.get_text(strip=True) if title_tag else ""
+            # short description: the first <p> under AdItem_adInfoHolder__Vljfb (excluding location p)
+            desc = ""
+            info_holders = sec.select('.AdItem_adInfoHolder__Vljfb')
+            if info_holders:
+                # in sample, first info holder contains location p, second p contains description
+                # find first <p> inside the first info holder that is not the location (heuristic)
+                for ih in info_holders:
+                    pdesc = ih.find_all('p', recursive=False)
+                    # pdesc list may contain location p then description p
+                    for p in pdesc:
+                        # skip if p contains svg (location)
+                        if p.find('svg'):
+                            continue
+                        txt = p.get_text(strip=True)
+                        if txt:
+                            desc = txt
+                            break
+                    if desc:
+                        break
+            # price
+            price_tag = sec.select_one('.AdItem_price__VZ_at')
+            price = price_tag.get_text(" ", strip=True) if price_tag else ""
+            # posted status svg fill check
+            posted_div = sec.select_one('.AdItem_postedStatus__4y6Ca')
+            is_nonrenewed = False
+            if posted_div:
+                svg = posted_div.find('svg')
+                if svg:
+                    fill = svg.get('fill')
+                    # if fill == 'none' -> non-renewed (fresh), else renewed
+                    if fill and fill.strip().lower() == 'none':
+                        is_nonrenewed = True
+            ads.append({
+                "id": section_id,
+                "link": link,
+                "title": title,
+                "desc": desc,
+                "price": price,
+                "nonrenewed": is_nonrenewed
+            })
+        except Exception:
             continue
-        if not SIZE_RE.search(title):
-            continue
-        status_div = find_status_div(sec)
-        if not status_div:
-            continue
-        shtml = str(status_div).lower()
-        if 'fill="none"' not in shtml:
-            continue
-        desc = extract_description(sec)
-        price = extract_price(sec)
-        link = extract_link(sec)
-        results.append({"title": title, "desc": desc, "price": price, "link": link})
-    return results
+    return ads
 
-def read_prev_titles_from_file(path: str) -> List[str]:
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        txt = f.read().strip()
-    if not txt:
-        return []
-    blocks = [b.strip() for b in txt.split(SEPARATOR) if b.strip()]
-    titles = []
-    for b in blocks:
-        lines = [l for l in b.splitlines() if l.strip()]
-        if lines:
-            titles.append(lines[0].strip())
-    return titles
-
-def write_out_file(path: str, items):
-    with open(path, "w", encoding="utf-8") as f:
-        for it in items:
-            f.write(it["title"] + "\n")
-            f.write((it["desc"] or "") + "\n")
-            f.write((it["price"] or "") + "\n")
-            f.write(SEPARATOR + "\n")
-
-def send_telegram(title: str, link: str, desc: str) -> bool:
-    token = TELEGRAM_BOT_TOKEN
-    chat_id = TELEGRAM_CHAT_ID
-    if not token or not chat_id:
-        print("Telegram not configured via env vars (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID). Skipping notification.")
-        return False
-    msg = f"🆕 Novi KP oglas:\n{title}\n{desc}\n{link}"
-    send_url = f"https://api.telegram.org/bot{token}/sendMessage"
-    try:
-        res = requests.post(send_url, data={"chat_id": chat_id, "text": msg}, timeout=10)
-        if res.status_code == 200:
-            print("Telegram notifikacija poslana.")
+def matches_size(text):
+    t = (text or "").lower()
+    for s in SIZES_LOWER:
+        if s in t:
             return True
-        else:
-            print("Telegram respons:", res.status_code, res.text)
-            return False
-    except Exception as e:
-        print("Greška pri slanju Telegram poruke:", e)
+    # additional special case for pixel resolution variants (3840x2160 with/without spaces)
+    if re.search(r'3840\s*[x×]\s*2160', t):
+        return True
+    return False
+
+def send_telegram_messages(lines):
+    if not BOT_TOKEN or not CHAT_ID:
+        print("Telegram token/ID not set in env.")
         return False
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+    # chunk into messages < 3800 chars to be safe (telegram limit ~4096)
+    msgs = []
+    cur = ""
+    for line in lines:
+        if len(cur) + len(line) + 1 > 3800:
+            msgs.append(cur)
+            cur = ""
+        cur += line + "\n\n"
+    if cur:
+        msgs.append(cur)
+
+    ok = True
+    for m in msgs:
+        resp = requests.post(url, data={"chat_id": CHAT_ID, "text": m})
+        if resp.status_code != 200:
+            print("Telegram respons:", resp.status_code, resp.text)
+            ok = False
+        else:
+            print("Telegram notifikacija poslana.")
+        sleep(0.2)
+    return ok
+
+# ------------- MAIN -------------
+def load_old_titles(fn):
+    if os.path.exists(fn):
+        try:
+            with open(fn, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_old_titles(fn, titles):
+    with open(fn, "w", encoding="utf-8") as f:
+        json.dump(list(titles), f, ensure_ascii=False, indent=2)
+
+def safe_git_commit_push(file_paths, commit_message="Update neobnovljeni results [ci skip]"):
+    try:
+        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+        subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+        for p in file_paths:
+            subprocess.run(["git", "add", p], check=False)
+        subprocess.run(["git", "commit", "-m", commit_message], check=False)
+        # pull rebase to avoid rejected push
+        subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
+        res = subprocess.run(["git", "push", "origin", "main"], check=False)
+        if res.returncode != 0:
+            print("Git push failed (non-zero).")
+    except Exception as e:
+        print("Git commit/push error:", e)
+
+def process_url(url):
+    slug = slug_from_url(url)
+    json_file = os.path.join(DATA_DIR, f"neobnovljeni_{slug}.json")
+    txt_file = os.path.join(DATA_DIR, f"neobnovljeni_{slug}.txt")
+
+    html = fetch_html(url)
+    ads = parse_ads_from_html(html)
+
+    # filter only nonrenewed
+    ads_nonrenewed = [a for a in ads if a.get("nonrenewed")]
+    # filter by sizes present either in title or desc
+    filtered = []
+    for a in ads_nonrenewed:
+        combined = (a.get("title","") + " " + a.get("desc","")).lower()
+        if matches_size(combined):
+            filtered.append(a)
+
+    # build title lists for comparison
+    new_titles = [a.get("title","") for a in filtered]
+    old_titles = load_old_titles(json_file)
+
+    set_new = set(new_titles)
+    set_old = set(old_titles)
+
+    added = [t for t in new_titles if t not in set_old]
+
+    # prepare human readable txt (overwrite)
+    lines_txt = []
+    for a in filtered:
+        lines_txt.append(a.get("title",""))
+        lines_txt.append(a.get("desc",""))
+        lines_txt.append(a.get("price",""))
+        lines_txt.append(a.get("link",""))
+        lines_txt.append("-" * 40)
+    with open(txt_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines_txt))
+
+    # notifications
+    if added:
+        # prepare message lines for telegram
+        msgs = []
+        for t in added:
+            # find ad object
+            for a in filtered:
+                if a.get("title") == t:
+                    block = f"{a.get('title')}\n{a.get('desc')}\n{a.get('price')}\n{a.get('link')}\n" + ("-"*30)
+                    msgs.append(block)
+                    break
+        send_ok = send_telegram_messages(msgs)
+        if send_ok:
+            # only after successful send, save new titles
+            save_old_titles(json_file, new_titles)
+            return True, len(added)
+        else:
+            print("Slanje notifikacije nije uspelo (pogledaj env varse i log).")
+            return False, 0
+    else:
+        # nothing added - update stored list anyway (keeps it fresh)
+        save_old_titles(json_file, new_titles)
+        return True, 0
 
 def main():
-    print("Pokrećem fetch i parsing...")
+    total_added = 0
+    overall_ok = True
+    for url in URLS:
+        try:
+            ok, added = process_url(url)
+            if not ok:
+                overall_ok = False
+            total_added += added
+        except Exception as e:
+            print("Error processing URL:", url, e)
+            overall_ok = False
+
+    # commit/push all data files
     try:
-        curr = parse_current()
+        all_files = [os.path.join(DATA_DIR, f) for f in os.listdir(DATA_DIR)]
+        safe_git_commit_push(all_files)
     except Exception as e:
-        print("Greška pri fetch/parsing:", e)
-        sys.exit(1)
+        print("Git push problem:", e)
 
-    print(f"Pronađeno {len(curr)} oglasa (neobnovljeni + dijagonale).")
-
-    # prethodno čitamo naslove iz istog OUT_FILE koji se čuva u repo (Actions će commitovati)
-    prev_titles = read_prev_titles_from_file(OUT_FILE)
-    prev_empty = (len(prev_titles) == 0)
-    curr_titles = [c["title"] for c in curr]
-
-    notify = False
-    notify_payload = None
-
-    # Logic:
-    if not os.path.exists(OUT_FILE):
-        print("Prethodni fajl ne postoji -> inicijalni run, samo zapisujem, bez notifikacije.")
-        write_out_file(OUT_FILE, curr)
-        return
-
-    if prev_empty and len(curr_titles) > 0:
-        notify = True
-        notify_payload = curr[0]
-    elif len(curr_titles) == 0:
-        print("Trenutna lista prazna -> ne saljem notifikaciju, samo prepisujem fajl.")
-        write_out_file(OUT_FILE, curr)
-        return
-    else:
-        prev_first = prev_titles[0] if prev_titles else None
-        curr_first = curr_titles[0] if curr_titles else None
-        if curr_first != prev_first:
-            if curr_first in prev_titles:
-                print("Prvi naslov se promenio, ali se nalazi među starim naslovima -> promena pozicije, NIJE novi oglas.")
-            else:
-                notify = True
-                notify_payload = curr[0]
-        else:
-            print("Prvi naslov isti -> nema notifikacije.")
-
-    # UVIJEK prepisujemo izlazni fajl (persist)
-    write_out_file(OUT_FILE, curr)
-
-    if notify and notify_payload:
-        print("Detektovan NOVI oglas; saljem notifikaciju.")
-        sent = send_telegram(notify_payload["title"], notify_payload["link"], notify_payload["desc"])
-        if not sent:
-            print("Slanje notifikacije nije uspelo (pogledaj env varse i log).")
-    else:
-        print("Nema notifikacije za poslati.")
+    print(f"Done. Total new ads added: {total_added}")
+    if total_added == 0:
+        print("Nema novih oglasa.")
 
 if __name__ == "__main__":
     main()
-
