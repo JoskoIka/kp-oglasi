@@ -1,4 +1,4 @@
-# kp_check_and_notify_telegram.py
+# kp_check_and_notify_telegram_fixed.py
 import os, re, json, subprocess, time
 from urllib.parse import urljoin, urlparse
 import requests
@@ -9,16 +9,23 @@ from bs4 import BeautifulSoup
 SEARCHES = [
     {"url": "https://www.kupujemprodajem.com/tv-i-video/tv-lcd-plazma-led/pretraga?categoryId=1054&groupId=640&priceFrom=70&priceTo=180&currency=eur&condition=used&condition=as-new&condition=new&ignoreUserId=no&order=posted%20desc&page=1", "name_filter": "SIZES"},
     {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s20&categoryId=23&groupId=75&priceFrom=65&priceTo=100&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s21&categoryId=23&groupId=75&priceFrom=75&priceTo=125&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s22&categoryId=23&groupId=75&priceFrom=80&priceTo=150&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no", "name_filter": None},
+    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s21&categoryId=23&groupId=75&priceFrom=75&priceTo=125&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
+    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s22&categoryId=23&groupId=75&priceFrom=80&priceTo=150&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
     {"url": "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/tableti/pretraga?keywords=a9%2B&categoryId=1221&groupId=766&priceFrom=80&priceTo=180&currency=eur&condition=used&condition=as-new&condition=new&keywordsScope=description&hasPrice=yes&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": "A9PLUS"},
-    {"url": "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/pretraga?keywords=HP%20RYZEN&categoryId=1221&groupId=101&priceTo=350&currency=eur&condition=new&condition=as-new&condition=used&order=posted%20desc&ignoreUserId=no", "name_filter": None},
+    {"url": "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/pretraga?keywords=HP%20RYZEN&categoryId=1221&groupId=101&priceTo=350&currency=eur&condition=new&condition=as-new&condition=used&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
 ]
 
 SIZES = ["40","42","43","46","47","48","49","50","55","60","4k","ultra hd","uhd","3840"]
 A9_KEYWORDS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
-USER_AGENT = "Mozilla/5.0"
+# realistic browser UA + headers to reduce server differences vs real browser
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+DEFAULT_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept-Language": "sr-RS,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Referer": "https://www.kupujemprodajem.com/"
+}
 
 DATA_DIR = ".kp_data"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -42,17 +49,85 @@ CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 def log(*args):
     print("[kp]", *args)
 
+
 def safe_slug(url):
     p = urlparse(url)
     return re.sub(r'[^0-9a-zA-Z_]', '_', (p.path + "?" + (p.query or "")))[:120]
 
-def fetch_html(url):
-    headers = {"User-Agent": USER_AGENT}
-    r = requests.get(url, headers=headers, timeout=30)
-    r.raise_for_status()
-    return r.text
 
-def parse_ads(html):
+def fetch_html_and_itemlist(url):
+    """
+    Vraca (html_text, itemlist_statics)
+    itemlist_statics je set statickih delova (extract_static_part) koji su u JSON-LD ItemList ako postoji,
+    ili None ako JSON-LD nije prisutan.
+    """
+    headers = DEFAULT_HEADERS.copy()
+    try:
+        r = requests.get(url, headers=headers, timeout=30)
+        r.raise_for_status()
+        html = r.text
+    except Exception as e:
+        log("fetch error:", e)
+        raise
+
+    # probaj da parsiras JSON-LD ItemList (ako postoji) da dobijemo listu URLova prve strane
+    itemlist_statics = None
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+        for s in soup.find_all("script", {"type": "application/ld+json"}):
+            try:
+                js = s.string
+                if not js:
+                    continue
+                j = json.loads(js)
+                # j može biti lista ili dict
+                candidates = [j] if isinstance(j, dict) else (j if isinstance(j, list) else [])
+                for obj in candidates:
+                    if isinstance(obj, dict) and obj.get("@type", "").lower() == "itemlist":
+                        elements = obj.get("itemListElement") or []
+                        if elements:
+                            statics = []
+                            for el in elements:
+                                u = None
+                                if isinstance(el, dict):
+                                    u = el.get("url") or (el.get("item", {}).get("@id") if isinstance(el.get("item"), dict) else None)
+                                if u:
+                                    statics.append(extract_static_part(u))
+                            if statics:
+                                itemlist_statics = set(statics)
+                                break
+                    # ako je obj tip skracen (npr {'@graph': [...]}) - pokušamo proći kroz graph
+                    if isinstance(obj, dict) and '@graph' in obj:
+                        for g in obj.get('@graph', []):
+                            if isinstance(g, dict) and g.get('@type','').lower() == 'itemlist':
+                                elements = g.get('itemListElement') or []
+                                statics = []
+                                for el in elements:
+                                    u = None
+                                    if isinstance(el, dict):
+                                        u = el.get('url') or (el.get('item', {}).get('@id') if isinstance(el.get('item'), dict) else None)
+                                    if u:
+                                        statics.append(extract_static_part(u))
+                                if statics:
+                                    itemlist_statics = set(statics)
+                                    break
+                        if itemlist_statics:
+                            break
+                if itemlist_statics:
+                    break
+            except Exception:
+                continue
+    except Exception:
+        itemlist_statics = None
+
+    return html, itemlist_statics
+
+
+def parse_ads_from_html_with_whitelist(html, allowed_statics=None):
+    """
+    Kao stari parse_ads, ali ako allowed_statics (set) nije None,
+    filtrira samo oglase ciji static deo postoji u allowed_statics.
+    """
     soup = BeautifulSoup(html, "html.parser")
     out = []
     for sec in soup.select('section[class*="AdItem_adOuterHolder"]'):
@@ -60,10 +135,14 @@ def parse_ads(html):
             a = sec.select_one('a[href]')
             if not a:
                 continue
-            link = urljoin("https://www.kupujemprodajem.com", a.get('href',''))
+            href = a.get('href','')
+            link = urljoin("https://www.kupujemprodajem.com", href)
+            static = extract_static_part(link)
+            # ako imamo whitelist, preskoci sve sto nije u whitelist
+            if allowed_statics is not None and static not in allowed_statics:
+                continue
             title_tag = sec.select_one('.AdItem_name__iOZvA')
             title = title_tag.get_text(strip=True) if title_tag else ""
-            # description: first p without svg inside .AdItem_adInfoHolder__Vljfb
             desc = ""
             info_holders = sec.select('.AdItem_adInfoHolder__Vljfb')
             if info_holders:
@@ -85,10 +164,11 @@ def parse_ads(html):
                 fill = (posted_svg.get('fill') or "").strip().lower()
                 if fill == "none":
                     nonrenewed = True
-            out.append({"link": link, "title": title, "desc": desc, "price": price, "nonrenewed": nonrenewed})
+            out.append({"link": link, "title": title, "desc": desc, "price": price, "nonrenewed": nonrenewed, "_static": static})
         except Exception:
             continue
     return out
+
 
 def extract_static_part(link):
     """
@@ -114,6 +194,7 @@ def extract_static_part(link):
     except Exception:
         return link.split('?',1)[0]
 
+
 def name_match(ad, mode):
     text = (ad.get("title","") + " " + ad.get("desc","")).lower()
     if mode == "SIZES":
@@ -121,6 +202,7 @@ def name_match(ad, mode):
     if mode == "A9PLUS":
         return any(k in text for k in A9_KEYWORDS)
     return True
+
 
 def load_state():
     if os.path.exists(STATE_FILE):
@@ -132,9 +214,11 @@ def load_state():
             return {}
     return {}
 
+
 def write_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
+
 
 def load_seen():
     if os.path.exists(SEEN_FILE):
@@ -147,6 +231,7 @@ def load_seen():
             return []
     return []
 
+
 def write_seen(seen_list):
     try:
         with open(SEEN_FILE, "w", encoding="utf-8") as f:
@@ -156,11 +241,13 @@ def write_seen(seen_list):
     except Exception as e:
         log("Seen write error:", e)
 
+
 def git_pull():
     subprocess.run(["git","config","user.name","github-actions[bot]"], check=False)
     subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"], check=False)
     res = subprocess.run(["git","pull","--rebase","origin","main"], check=False)
     return res.returncode == 0
+
 
 def git_commit_and_push(files_to_add):
     for attempt in range(1, GIT_RETRY+1):
@@ -179,6 +266,7 @@ def git_commit_and_push(files_to_add):
         time.sleep(GIT_RETRY_SLEEP)
     log("git push failed after retries")
     return False
+
 
 def send_telegram(text):
     if not BOT_TOKEN or not CHAT_ID:
@@ -218,20 +306,25 @@ def main():
         slug = safe_slug(url)
         log("Processing", slug)
         try:
-            html = fetch_html(url)
-            ads = parse_ads(html)
-            # keep only nonrenewed
+            # fetch html + optional ItemList whitelist
+            html, itemlist_statics = fetch_html_and_itemlist(url)
+            # parse ads, optionally only those in itemlist_statics
+            ads = parse_ads_from_html_with_whitelist(html, allowed_statics=itemlist_statics)
+
+            # keep only nonrenewed and matching name filter
             ads = [a for a in ads if a.get("nonrenewed")]
-            # apply name filter if requested
             ads = [a for a in ads if name_match(a, mode)]
+
             current_links = [a["link"] for a in ads]
-            # determine "new" by static part vs seen_set
+
+            # determine new by static part vs seen_set
             new_ads = []
             for a in ads:
-                static = extract_static_part(a["link"])
+                static = a.get("_static") or extract_static_part(a["link"])
                 a["_static"] = static
                 if static not in seen_set:
                     new_ads.append(a)
+
             all_new_ads[slug] = new_ads
             new_state[slug] = current_links
             log(f"Found {len(ads)} ads (nonrenewed+filter). New: {len(new_ads)}")
@@ -295,6 +388,6 @@ def main():
 
     log("Done. Total new ads notified:", total_new)
 
+
 if __name__ == "__main__":
     main()
-
