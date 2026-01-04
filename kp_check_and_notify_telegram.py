@@ -20,7 +20,17 @@ A9_KEYWORDS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
 USER_AGENT = "Mozilla/5.0"
 
-STATE_FILE = ".kp_state.json"
+DATA_DIR = ".kp_data"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+STATE_FILE = os.path.join(DATA_DIR, ".kp_state.json")
+SEEN_FILE = os.path.join(DATA_DIR, "seen_base.txt")
+
+# base capacity logic
+SEEN_TRIM_THRESHOLD = 1000  # kada dođemo do ovoga ili više -> trim
+SEEN_MAX = 1100
+SEEN_KEEP = 300
+
 GIT_RETRY = 3
 GIT_RETRY_SLEEP = 2  # sec
 
@@ -48,7 +58,7 @@ def parse_ads(html):
     for sec in soup.select('section[class*="AdItem_adOuterHolder"]'):
         try:
             a = sec.select_one('a[href]')
-            if not a: 
+            if not a:
                 continue
             link = urljoin("https://www.kupujemprodajem.com", a.get('href',''))
             title_tag = sec.select_one('.AdItem_name__iOZvA')
@@ -76,10 +86,33 @@ def parse_ads(html):
                 if fill == "none":
                     nonrenewed = True
             out.append({"link": link, "title": title, "desc": desc, "price": price, "nonrenewed": nonrenewed})
-        except Exception as e:
-            # ignore single ad parsing errors
+        except Exception:
             continue
     return out
+
+def extract_static_part(link):
+    """
+    Izvlači statični deo linka: segment pre 'oglas' + '/oglas/' + id
+    npr: .../hp-.../oglas/187961167?...  ->  hp-.../oglas/187961167
+    Ako ne može naći pattern, vraća path bez query kao fallback.
+    """
+    try:
+        p = urlparse(link)
+        path = p.path.strip('/')
+        parts = path.split('/')
+        # naći index 'oglas'
+        if 'oglas' in parts:
+            idx = parts.index('oglas')
+            if idx >= 1 and idx + 1 < len(parts):
+                slug = parts[idx-1]
+                oid = parts[idx+1]
+                return f"{slug}/oglas/{oid}"
+        # fallback: uzmi zadnja 2 segmenta
+        if len(parts) >= 2:
+            return "/".join(parts[-2:])
+        return path
+    except Exception:
+        return link.split('?',1)[0]
 
 def name_match(ad, mode):
     text = (ad.get("title","") + " " + ad.get("desc","")).lower()
@@ -103,19 +136,37 @@ def write_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
+def load_seen():
+    if os.path.exists(SEEN_FILE):
+        try:
+            with open(SEEN_FILE, "r", encoding="utf-8") as f:
+                lines = [l.strip() for l in f.readlines() if l.strip()]
+                return lines  # newest at index 0 expected
+        except Exception as e:
+            log("Seen load error:", e)
+            return []
+    return []
+
+def write_seen(seen_list):
+    try:
+        with open(SEEN_FILE, "w", encoding="utf-8") as f:
+            # newest first
+            for s in seen_list:
+                f.write(s + "\n")
+    except Exception as e:
+        log("Seen write error:", e)
+
 def git_pull():
-    # ensure we start from latest
     subprocess.run(["git","config","user.name","github-actions[bot]"], check=False)
     subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"], check=False)
     res = subprocess.run(["git","pull","--rebase","origin","main"], check=False)
     return res.returncode == 0
 
-def git_commit_and_push():
+def git_commit_and_push(files_to_add):
     for attempt in range(1, GIT_RETRY+1):
         try:
-            subprocess.run(["git","add", STATE_FILE], check=False)
-            subprocess.run(["git","commit","-m","kp: update state [ci skip]"], check=False)
-            # pull before push to avoid non-fast-forward
+            subprocess.run(["git","add"] + files_to_add, check=False)
+            subprocess.run(["git","commit","-m","kp: update state/seen [ci skip]"], check=False)
             subprocess.run(["git","pull","--rebase","origin","main"], check=False)
             res = subprocess.run(["git","push","origin","main"], check=False)
             if res.returncode == 0:
@@ -151,9 +202,12 @@ def main():
     log("Starting. Doing initial git pull to sync state...")
     git_pull()
 
-    state = load_state()  # dict: slug -> list of links
+    state = load_state()
     if not isinstance(state, dict):
         state = {}
+
+    seen_list = load_seen()  # newest first
+    seen_set = set(seen_list)
 
     all_new_ads = {}  # slug -> list of ad dicts (new only)
     new_state = {}    # slug -> current links (to be written)
@@ -171,9 +225,13 @@ def main():
             # apply name filter if requested
             ads = [a for a in ads if name_match(a, mode)]
             current_links = [a["link"] for a in ads]
-            old_links = set(state.get(slug, []))
-            # new = those whose link not in old_links
-            new_ads = [a for a in ads if a["link"] not in old_links]
+            # determine "new" by static part vs seen_set
+            new_ads = []
+            for a in ads:
+                static = extract_static_part(a["link"])
+                a["_static"] = static
+                if static not in seen_set:
+                    new_ads.append(a)
             all_new_ads[slug] = new_ads
             new_state[slug] = current_links
             log(f"Found {len(ads)} ads (nonrenewed+filter). New: {len(new_ads)}")
@@ -182,11 +240,34 @@ def main():
             all_new_ads[slug] = []
             new_state[slug] = state.get(slug, [])
 
-    # write new_state to STATE_FILE locally
-    write_state(new_state)
+    # Update seen_list in memory by inserting statics of new ads (newest first),
+    # but DO NOT send notifications yet. We'll write files and push; only after successful push we send.
+    # We must keep insertion order: newest first. Also avoid duplicates.
+    for slug, new_ads in all_new_ads.items():
+        for a in new_ads:
+            static = a.get("_static")
+            if not static:
+                continue
+            # remove if already exists (shouldn't happen because checked earlier, but safe)
+            if static in seen_list:
+                seen_list.remove(static)
+            # insert at front
+            seen_list.insert(0, static)
+            seen_set.add(static)
 
-    # try to push the new state to remote; only if this succeeds we will send notifications
-    if not git_commit_and_push():
+    # Trim seen_list if passes threshold (keep newest SEEN_KEEP)
+    if len(seen_list) >= SEEN_TRIM_THRESHOLD or len(seen_list) > SEEN_MAX:
+        log(f"Seen list length {len(seen_list)} >= threshold {SEEN_TRIM_THRESHOLD}/{SEEN_MAX}. Trimming to {SEEN_KEEP}.")
+        seen_list = seen_list[:SEEN_KEEP]
+        seen_set = set(seen_list)
+
+    # Write new_state and seen_list to disk
+    write_state(new_state)
+    write_seen(seen_list)
+
+    # Commit & push both STATE_FILE and SEEN_FILE. Only if push succeeds -> we will send notifications
+    files_to_push = [STATE_FILE, SEEN_FILE]
+    if not git_commit_and_push(files_to_push):
         log("Aborting notifications because git push failed. This avoids duplicate notifications.")
         return
 
@@ -201,15 +282,17 @@ def main():
         # build single message for this link (numeration from 1)
         lines = []
         for i, a in enumerate(new_ads, 1):
-            lines.append(f"{i}. {a['title']}\n{a['desc']}\n{a['price']}\n{a['link']}")
+            # each ad block: numbered, title, desc, price, link
+            block = f"{i}. {a['title']}\n{a['desc']}\n{a['price']}\n{a['link']}"
+            lines.append(block)
         message = "\n\n".join(lines).strip()
-        # send the message (one message per link)
         ok = send_telegram(message)
         if ok:
             # send separator message exactly as requested
-            send_telegram("NOVI OGLASI\n.\n.")
+            send_telegram("NOVI OGLASI\n\n")
         else:
             log("Warning: telegram send failed for", slug)
+
     log("Done. Total new ads notified:", total_new)
 
 if __name__ == "__main__":
