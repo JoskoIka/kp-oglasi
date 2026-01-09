@@ -1,8 +1,61 @@
 {
-  "_tv_i_video_tv_lcd_plazma_led_pretraga_categoryId_1054_groupId_640_priceFrom_70_priceTo_180_currency_eur_condition_used_": [],
-  "_mobilni_telefoni_samsung_pretraga_keywords_s20_categoryId_23_groupId_75_priceFrom_65_priceTo_100_currency_eur_condition": [],
-  "_mobilni_telefoni_samsung_pretraga_keywords_s21_categoryId_23_groupId_75_priceFrom_75_priceTo_125_currency_eur_condition": [],
-  "_mobilni_telefoni_samsung_pretraga_keywords_s22_categoryId_23_groupId_75_priceFrom_80_priceTo_150_currency_eur_condition": [],
-  "_kompjuteri_laptop_i_tablet_tableti_pretraga_keywords_a9_2B_categoryId_1221_groupId_766_priceFrom_80_priceTo_180_currenc": [],
-  "_kompjuteri_laptop_i_tablet_laptopovi_pretraga_keywords_HP_20RYZEN_categoryId_1221_groupId_101_priceTo_350_currency_eur_": []
+  "_tv_i_video_tv_lcd_plazma_led_pretraga_categoryId_1054_groupId_640_priceFrom_70_priceTo_180_currency_eur_condition_used_": [
+    "https://www.kupujemprodajem.com/tv-i-video/tv-lcd-plazma-led/na-prodaju-samsung-tv-50-inca/oglas/188338531?filterId=8366551645"
+  ],
+  "_mobilni_telefoni_samsung_pretraga_keywords_s20_categoryId_23_groupId_75_priceFrom_65_priceTo_100_currency_eur_condition": [
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20-fe-128gb/oglas/188381417?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/s20-fe/oglas/188373341?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20-plus-8gb-128gb-dual-sim/oglas/188341754?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s20fe/oglas/188335158?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20-fe-6-128gb-akciska-cena/oglas/188330494?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s20-fan/oglas/188192228?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s20-fe-128g/oglas/188039369?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20/oglas/187932615?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s20fe/oglas/187916591?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20-ultra/oglas/187913873?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20fe/oglas/187904909?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20-fe/oglas/187903177?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20-fe-6-128gb/oglas/187879317?filterId=8371681084",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s20fe/oglas/187756056?filterId=8371681084"
+  ],
+  "_mobilni_telefoni_samsung_pretraga_keywords_s21_categoryId_23_groupId_75_priceFrom_75_priceTo_125_currency_eur_condition": [
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21fe/oglas/188380931?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21/oglas/188357977?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s21-fe-kao-nov/oglas/188277925?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s21-plus/oglas/188259932?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21-ultra/oglas/188253317?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s21-128-8gb-duos/oglas/188250793?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s21-ultra-5g-12-128/oglas/188214702?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21-fe-5g/oglas/188202655?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s21-5g-128gb/oglas/188183551?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21-5g/oglas/188083989?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21-5g/oglas/188083982?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21/oglas/187830193?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/akcija-samsung-s21-fe-snapdragon/oglas/187786537?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21fe/oglas/187729312?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s21-i-s8/oglas/187626375?filterId=8371681201",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsumg-s21-ultra/oglas/187605615?filterId=8371681201"
+  ],
+  "_mobilni_telefoni_samsung_pretraga_keywords_s22_categoryId_23_groupId_75_priceFrom_80_priceTo_150_currency_eur_condition": [
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22-8-128-zeleni/oglas/188387246?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22/oglas/188371814?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22-128-gb/oglas/188269378?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s22/oglas/188157059?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22-128gb/oglas/188154337?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22/oglas/188136609?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22/oglas/188106609?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22-ultra-snapdragon/oglas/188095048?filterId=8371681345",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22/oglas/187814694?filterId=8371681345"
+  ],
+  "_kompjuteri_laptop_i_tablet_tableti_pretraga_keywords_a9_2B_categoryId_1221_groupId_766_priceFrom_80_priceTo_180_currenc": [
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/tableti/samsung-galaxy-tab-a9-128-gb-wifi/oglas/188351464?filterId=8371681462",
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/tableti/samsung-galaxy-tab-a9-64gb-novo/oglas/188272742?filterId=8371681462",
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/tableti/samsung-galaxy-a9-64gb-poklon/oglas/188257583?filterId=8371681462"
+  ],
+  "_kompjuteri_laptop_i_tablet_laptopovi_pretraga_keywords_HP_20RYZEN_categoryId_1221_groupId_101_priceTo_350_currency_eur_": [
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/hp-elitebook-735-g6-ryzen-5-3500u-16gb-ddr4-512gb-ssd-13-3/oglas/188374667?filterId=8371681561",
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/hp-ryzen-3-20gb-ram-ssd-512gb-gpu-vega-3-2gb/oglas/188350615?filterId=8371681561",
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/hp-omen-rtx-2060-6gb-ryzen-7-4800h-16gb/oglas/188344555?filterId=8371681561",
+    "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/hp-15-fc0251nm-15-6-fhd-amd-ryzen-5-7520u-16gb-radeon-610m/oglas/188337540?filterId=8371681561"
+  ]
 }
