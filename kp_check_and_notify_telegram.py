@@ -13,9 +13,14 @@ SEARCHES = [
     {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s22&categoryId=23&groupId=75&priceFrom=80&priceTo=150&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
     {"url": "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/tableti/pretraga?keywords=a9%2B&categoryId=1221&groupId=766&priceFrom=80&priceTo=180&currency=eur&condition=used&condition=as-new&condition=new&keywordsScope=description&hasPrice=yes&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": "A9PLUS"},
     {"url": "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/laptopovi/pretraga?keywords=HP%20RYZEN&categoryId=1221&groupId=101&priceTo=350&currency=eur&condition=new&condition=as-new&condition=used&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
+    # additional requested searches:
+    {"url": "https://www.kupujemprodajem.com/tv-i-video/tv-lcd-plazma-led/pretraga?categoryId=1054&groupId=640&priceFrom=180&priceTo=260&currency=eur&condition=used&condition=as-new&condition=new&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": "SIZES1"},
+    {"url": "https://www.kupujemprodajem.com/pretraga?priceTo=400&order=posted%20desc&categoryId=1221&currency=eur&keywordsScope=description&priceFrom=300&keywords=m1&prev_keywords=m1&page=1", "name_filter": None},
 ]
 
+# name-filter keyword lists
 SIZES = ["40","42","43","46","47","48","49","50","55","60","4k","ultra hd","uhd","3840"]
+SIZES1 = ["49","50","55","60","65","4k","ultra hd","uhd","3840"]
 A9_KEYWORDS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
 # realistic browser UA + headers to reduce server differences vs real browser
@@ -55,78 +60,27 @@ def safe_slug(url):
     return re.sub(r'[^0-9a-zA-Z_]', '_', (p.path + "?" + (p.query or "")))[:120]
 
 
-def fetch_html_and_itemlist(url):
+def fetch_html(url):
     """
-    Vraca (html_text, itemlist_statics)
-    itemlist_statics je set statickih delova (extract_static_part) koji su u JSON-LD ItemList ako postoji,
-    ili None ako JSON-LD nije prisutan.
+    Vraća HTML prve strane (ignorise JSON-LD itemlist).
     """
     headers = DEFAULT_HEADERS.copy()
     try:
         r = requests.get(url, headers=headers, timeout=30)
         r.raise_for_status()
-        html = r.text
+        return r.text
     except Exception as e:
         log("fetch error:", e)
         raise
 
-    # probaj da parsiras JSON-LD ItemList (ako postoji) da dobijemo listu URLova prve strane
-    itemlist_statics = None
-    try:
-        soup = BeautifulSoup(html, "html.parser")
-        for s in soup.find_all("script", {"type": "application/ld+json"}):
-            try:
-                js = s.string
-                if not js:
-                    continue
-                j = json.loads(js)
-                # j može biti lista ili dict
-                candidates = [j] if isinstance(j, dict) else (j if isinstance(j, list) else [])
-                for obj in candidates:
-                    if isinstance(obj, dict) and obj.get("@type", "").lower() == "itemlist":
-                        elements = obj.get("itemListElement") or []
-                        if elements:
-                            statics = []
-                            for el in elements:
-                                u = None
-                                if isinstance(el, dict):
-                                    u = el.get("url") or (el.get("item", {}).get("@id") if isinstance(el.get("item"), dict) else None)
-                                if u:
-                                    statics.append(extract_static_part(u))
-                            if statics:
-                                itemlist_statics = set(statics)
-                                break
-                    # ako je obj tip skracen (npr {'@graph': [...]}) - pokušamo proći kroz graph
-                    if isinstance(obj, dict) and '@graph' in obj:
-                        for g in obj.get('@graph', []):
-                            if isinstance(g, dict) and g.get('@type','').lower() == 'itemlist':
-                                elements = g.get('itemListElement') or []
-                                statics = []
-                                for el in elements:
-                                    u = None
-                                    if isinstance(el, dict):
-                                        u = el.get('url') or (el.get('item', {}).get('@id') if isinstance(el.get('item'), dict) else None)
-                                    if u:
-                                        statics.append(extract_static_part(u))
-                                if statics:
-                                    itemlist_statics = set(statics)
-                                    break
-                        if itemlist_statics:
-                            break
-                if itemlist_statics:
-                    break
-            except Exception:
-                continue
-    except Exception:
-        itemlist_statics = None
 
-    return html, itemlist_statics
-
-
-def parse_ads_from_html_with_whitelist(html, allowed_statics=None):
+def parse_ads_from_html(html):
     """
-    Kao stari parse_ads, ali ako allowed_statics (set) nije None,
-    filtrira samo oglase ciji static deo postoji u allowed_statics.
+    Parsira oglase isključivo iz HTML prve strane.
+    Vraća listu dictova sa poljima:
+      link, title, desc, price, nonrenewed, date_ok, _static
+    date_ok = True samo ako pise 'danas' ili 'juče'/'juce' u status bloku.
+    nonrenewed = True ako je svg fill == "none" (kao u originalnoj verziji).
     """
     soup = BeautifulSoup(html, "html.parser")
     out = []
@@ -138,16 +92,16 @@ def parse_ads_from_html_with_whitelist(html, allowed_statics=None):
             href = a.get('href','')
             link = urljoin("https://www.kupujemprodajem.com", href)
             static = extract_static_part(link)
-            # ako imamo whitelist, preskoci sve sto nije u whitelist
-            if allowed_statics is not None and static not in allowed_statics:
-                continue
+
             title_tag = sec.select_one('.AdItem_name__iOZvA')
             title = title_tag.get_text(strip=True) if title_tag else ""
+
             desc = ""
             info_holders = sec.select('.AdItem_adInfoHolder__Vljfb')
             if info_holders:
                 for ih in info_holders:
                     for p in ih.find_all('p', recursive=False):
+                        # preskoci svg (ikonice) u tekstu
                         if p.find('svg'):
                             continue
                         txt = p.get_text(strip=True)
@@ -156,15 +110,38 @@ def parse_ads_from_html_with_whitelist(html, allowed_statics=None):
                             break
                     if desc:
                         break
+
             price_tag = sec.select_one('.AdItem_price__VZ_at')
             price = price_tag.get_text(" ", strip=True) if price_tag else ""
+
+            # status svg (za nonrenewed detekciju)
             posted_svg = sec.select_one('.AdItem_postedStatus__4y6Ca svg')
             nonrenewed = False
             if posted_svg:
+                # original logic: svg.get('fill') == 'none' => nonrenewed
                 fill = (posted_svg.get('fill') or "").strip().lower()
                 if fill == "none":
                     nonrenewed = True
-            out.append({"link": link, "title": title, "desc": desc, "price": price, "nonrenewed": nonrenewed, "_static": static})
+
+            # datum: 'danas' ili 'juče'/'juce'
+            date_tag = sec.select_one('.AdItem_postedStatus__4y6Ca p')
+            date_text = date_tag.get_text(strip=True).lower() if date_tag else ""
+            date_ok = False
+            if date_text:
+                if "danas" in date_text:
+                    date_ok = True
+                elif "juče" in date_text or "juce" in date_text:
+                    date_ok = True
+
+            out.append({
+                "link": link,
+                "title": title,
+                "desc": desc,
+                "price": price,
+                "nonrenewed": nonrenewed,
+                "date_ok": date_ok,
+                "_static": static
+            })
         except Exception:
             continue
     return out
@@ -199,6 +176,8 @@ def name_match(ad, mode):
     text = (ad.get("title","") + " " + ad.get("desc","")).lower()
     if mode == "SIZES":
         return any(s in text for s in SIZES)
+    if mode == "SIZES1":
+        return any(s in text for s in SIZES1)
     if mode == "A9PLUS":
         return any(k in text for k in A9_KEYWORDS)
     return True
@@ -306,13 +285,13 @@ def main():
         slug = safe_slug(url)
         log("Processing", slug)
         try:
-            # fetch html + optional ItemList whitelist
-            html, itemlist_statics = fetch_html_and_itemlist(url)
-            # parse ads, optionally only those in itemlist_statics
-            ads = parse_ads_from_html_with_whitelist(html, allowed_statics=itemlist_statics)
+            # fetch html (ignore JSON-LD itemlist)
+            html = fetch_html(url)
+            # parse ads from HTML first page
+            ads = parse_ads_from_html(html)
 
-            # keep only nonrenewed and matching name filter
-            ads = [a for a in ads if a.get("nonrenewed")]
+            # keep only nonrenewed, matching name filter, AND posted danas/juče
+            ads = [a for a in ads if a.get("nonrenewed") and a.get("date_ok")]
             ads = [a for a in ads if name_match(a, mode)]
 
             current_links = [a["link"] for a in ads]
@@ -327,7 +306,7 @@ def main():
 
             all_new_ads[slug] = new_ads
             new_state[slug] = current_links
-            log(f"Found {len(ads)} ads (nonrenewed+filter). New: {len(new_ads)}")
+            log(f"Found {len(ads)} ads (nonrenewed+filter+date). New: {len(new_ads)}")
         except Exception as e:
             log("Error processing", slug, e)
             all_new_ads[slug] = []
