@@ -29,20 +29,7 @@ SIZES1 = ["49","50","55","60","65","4k","ultra hd","uhd","3840"]
 A9_KEYWORDS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
 # Exclude keywords for the SIZES/SIZES1 searches (ads containing any of these in title/desc will NOT be notified)
-EXCLUDE_SIZES = [
-    "akcija",
-    "fox",
-    "vox",
-    "vivax",
-    '27"',
-    '27 inca',
-    '27 inča',
-    '27 in',
-    '32"',
-    '32 inca',
-    '32 inča',
-    '32 in'
-]
+EXCLUDE_SIZES = ["akcija","fox","vox","vivax","tesla",'27"','27 inca','27 inča','27 in','32"','32 inca','32 inča','32 in']
 
 # realistic browser UA + headers to reduce server differences vs real browser
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
