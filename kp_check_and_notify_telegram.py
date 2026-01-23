@@ -1,4 +1,9 @@
-# kp_check_and_notify_telegram_fixed.py
+# kp_check_and_notify_telegram_fixed_modified.py
+# Modifikovana verzija originalne skripte.
+# Dodat je filter koji za pretrage sa name_filter 'SIZES' i 'SIZES1'
+# izbacuje oglase iz notifikacija ukoliko naslov/desc sadrže neželjene reči:
+# akcija, fox, vox, vivax, 27", 27 inca, 27 inča, 32", 32 inca, 32 inča
+
 import os, re, json, subprocess, time
 from urllib.parse import urljoin, urlparse
 import requests
@@ -22,6 +27,22 @@ SEARCHES = [
 SIZES = ["40","42","43","46","47","48","49","50","55","60","4k","ultra hd","uhd","3840"]
 SIZES1 = ["49","50","55","60","65","4k","ultra hd","uhd","3840"]
 A9_KEYWORDS = ["a9+", "a9 +", "a9plus", "a9 plus"]
+
+# Exclude keywords for the SIZES/SIZES1 searches (ads containing any of these in title/desc will NOT be notified)
+EXCLUDE_SIZES = [
+    "akcija",
+    "fox",
+    "vox",
+    "vivax",
+    '27"',
+    '27 inca',
+    '27 inča',
+    '27 in',
+    '32"',
+    '32 inca',
+    '32 inča',
+    '32 in'
+]
 
 # realistic browser UA + headers to reduce server differences vs real browser
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -173,7 +194,20 @@ def extract_static_part(link):
 
 
 def name_match(ad, mode):
-    text = (ad.get("title","") + " " + ad.get("desc","")).lower()
+    """Proverava da li oglas prolazi name_filter.
+    Za SIZES i SIZES1: prvo isključimo oglase koji sadrže EXCLUDE_SIZES.
+    Nakon toga vraćamo True samo ako sadrže neku od odobrenih veličina/ključeva.
+    """
+    text = (ad.get("title","") + " " + ad.get("desc",""))
+    text = text.lower()
+
+    # ako je SIZES ili SIZES1 -> prvo proverimo exclude listu
+    if mode in ("SIZES", "SIZES1"):
+        for ex in EXCLUDE_SIZES:
+            if ex in text:
+                # nalazimo isključeni termin -> oglas se IGNORIŠE
+                return False
+
     if mode == "SIZES":
         return any(s in text for s in SIZES)
     if mode == "SIZES1":
