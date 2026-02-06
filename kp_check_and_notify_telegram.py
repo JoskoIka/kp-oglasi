@@ -26,7 +26,7 @@ SEARCHES = [
 # name-filter keyword lists
 SIZES = ["40","42","43","46","47","48","49","50","55","58","60","65","4k","ultra hd","uhd","3840"]
 SIZES1 = ["48","49","50","55","58","60","65","4k","ultra hd","uhd","3840"]
-A9_KEYWORDS = ["a9+", "a9 +", "a9plus", "a9 plus"]
+A9PLUS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
 # Exclude keywords for the SIZES/SIZES1 searches (ads containing any of these in title/desc will NOT be notified)
 EXCLUDE_SIZES = ["akcija","fox","vox","vivax","tesla",'27"','27 inca','27inca','27 inča','27inča','32"','32 inca','32inca','32 inča','32inča']
@@ -391,3 +391,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
