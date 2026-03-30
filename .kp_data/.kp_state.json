@@ -1,10 +1,33 @@
 {
   "_mobilni_telefoni_samsung_pretraga_keywords_s20_categoryId_23_groupId_75_priceFrom_60_priceTo_85_currency_eur_condition_": [],
   "_mobilni_telefoni_samsung_pretraga_keywords_s21_categoryId_23_groupId_75_priceFrom_70_priceTo_100_currency_eur_condition": [],
-  "_mobilni_telefoni_samsung_pretraga_keywords_s22_categoryId_23_groupId_75_priceFrom_80_priceTo_130_currency_eur_condition": [],
+  "_mobilni_telefoni_samsung_pretraga_keywords_s22_categoryId_23_groupId_75_priceFrom_80_priceTo_130_currency_eur_condition": [
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-s22-ultra-12gb-256gb/oglas/190717420",
+    "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/samsung-galaxy-s22-8-128-gb-sim-fre/oglas/190706805"
+  ],
   "_kompjuteri_laptop_i_tablet_tableti_pretraga_keywords_a9_2B_categoryId_1221_groupId_766_priceFrom_70_priceTo_130_currenc": [],
-  "_tv_i_video_tv_lcd_plazma_led_pretraga_categoryId_1054_groupId_640_priceFrom_70_priceTo_140_currency_eur_condition_used_": [],
-  "_audio_muzicke_linije_pretraga_categoryId_1_groupId_127_priceFrom_50_priceTo_170_currency_eur_condition_used_hasPrice_ye": [],
-  "_audio_kucni_bioskopi_i_saundbarovi_pretraga_categoryId_1_groupId_2705_priceFrom_50_priceTo_170_currency_eur_condition_u": [],
-  "_audio_risiveri_surround_pretraga_categoryId_1_groupId_651_priceFrom_50_priceTo_140_currency_eur_condition_used_hasPrice": []
+  "_tv_i_video_tv_lcd_plazma_led_pretraga_categoryId_1054_groupId_640_priceFrom_70_priceTo_140_currency_eur_condition_used_": [
+    "https://www.kupujemprodajem.com/tv-i-video/tv-lcd-plazma-led/tv-sharp-lc-55cfe6242e-neispravan/oglas/190718305"
+  ],
+  "_audio_muzicke_linije_pretraga_categoryId_1_groupId_127_priceFrom_50_priceTo_170_currency_eur_condition_used_hasPrice_ye": [
+    "https://www.kupujemprodajem.com/audio/muzicke-linije/sony-linija/oglas/190719082",
+    "https://www.kupujemprodajem.com/audio/muzicke-linije/denon-muzicki-stub-iz-komponenti/oglas/190717540",
+    "https://www.kupujemprodajem.com/audio/muzicke-linije/aiwa-muzicka-linija-zvucnici-jak-bass-sve-radi/oglas/190715830",
+    "https://www.kupujemprodajem.com/audio/muzicke-linije/muzicka-linija-sony-hcd-ex700/oglas/190714107"
+  ],
+  "_audio_kucni_bioskopi_i_saundbarovi_pretraga_categoryId_1_groupId_2705_priceFrom_50_priceTo_170_currency_eur_condition_u": [
+    "https://www.kupujemprodajem.com/tv-i-video/kucni-bioskopi-i-saundbarovi/kucni-bioskop/oglas/190718162",
+    "https://www.kupujemprodajem.com/tv-i-video/kucni-bioskopi-i-saundbarovi/samsung-soundbar-hw-r550-soundbar-320watt/oglas/190706634",
+    "https://www.kupujemprodajem.com/tv-i-video/kucni-bioskopi-i-saundbarovi/philips-htl4111b-soundstage-soundbar/oglas/190701162"
+  ],
+  "_audio_risiveri_surround_pretraga_categoryId_1_groupId_651_priceFrom_50_priceTo_140_currency_eur_condition_used_hasPrice": [
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/technics-sa-dx750/oglas/190716973",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/pioneer-vsx-520-surround-resiver/oglas/190715052",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/denon-avr-1610/oglas/190712803",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/pioneer-vsx-818v-usb-daljinski/oglas/190710417",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/pioneer-vsx-405-rds-mk2-daljinski/oglas/190710383",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/pioneer-vsx-d511-daljinski/oglas/190710351",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/pioneer-vsx-410s/oglas/190707917",
+    "https://www.kupujemprodajem.com/audio/risiveri-surround/denon-avr-1610-daljinski-audyssey-mikrofon/oglas/190707442"
+  ]
 }
