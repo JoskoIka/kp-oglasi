@@ -12,14 +12,9 @@ from bs4 import BeautifulSoup
 # ============== CONFIG ==============
 
 SEARCHES = [
-    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s20&categoryId=23&groupId=75&priceFrom=60&priceTo=85&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s21&categoryId=23&groupId=75&priceFrom=70&priceTo=100&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/mobilni-telefoni/samsung/pretraga?keywords=s22&categoryId=23&groupId=75&priceFrom=80&priceTo=130&currency=eur&condition=used&keywordsScope=description&hasPrice=no&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/kompjuteri-laptop-i-tablet/tableti/pretraga?keywords=a9%2B&categoryId=1221&groupId=766&priceFrom=70&priceTo=130&currency=eur&condition=used&condition=as-new&condition=new&keywordsScope=description&hasPrice=yes&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": "A9PLUS"},
-    {"url": "https://www.kupujemprodajem.com/tv-i-video/tv-lcd-plazma-led/pretraga?categoryId=1054&groupId=640&priceFrom=70&priceTo=140&currency=eur&condition=used&condition=as-new&condition=new&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": "SIZES1"},
-    {"url": "https://www.kupujemprodajem.com/audio/muzicke-linije/pretraga?categoryId=1&groupId=127&priceFrom=50&priceTo=170&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/audio/kucni-bioskopi-i-saundbarovi/pretraga?categoryId=1&groupId=2705&priceFrom=50&priceTo=170&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/audio/risiveri-surround/pretraga?categoryId=1&groupId=651&priceFrom=50&priceTo=140&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no&page=1", "name_filter": None},  
+    {"url": "https://www.kupujemprodajem.com/audio/risiveri-surround/pretraga?categoryId=1&groupId=651&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
+    {"url": "https://www.kupujemprodajem.com/audio/risiveri-stereo/pretraga?categoryId=1&groupId=469&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
+    {"url": "https://www.kupujemprodajem.com/audio/pojacala/pretraga?categoryId=1&groupId=117&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},   
 ]
 
 # name-filter keyword lists
