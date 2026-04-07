@@ -1,3 +1,6 @@
+denon-pma-300v-precision/oglas/191086302
+pioneer-vsx-d710s/oglas/191086174
+denon-avr-1513-hdmi/oglas/191093116
 pioneer-a-616/oglas/191091239
 pioneer-a-209/oglas/191090271
 kenwood-kr-55-stereo/oglas/191090328
