@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 SEARCHES = [
     {"url": "https://www.kupujemprodajem.com/audio/risiveri-surround/pretraga?categoryId=1&groupId=651&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
     {"url": "https://www.kupujemprodajem.com/audio/risiveri-stereo/pretraga?categoryId=1&groupId=469&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/audio/pojacala/pretraga?categoryId=1&groupId=117&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},   
+    {"url": "https://www.kupujemprodajem.com/audio/pojacala/pretraga?categoryId=1&groupId=117&priceFrom=50&priceTo=200&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},   
 ]
 
 # name-filter keyword lists
