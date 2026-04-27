@@ -117,17 +117,18 @@ def parse_ads_from_html(html):
             price = price_tag.get_text(" ", strip=True) if price_tag else ""
 
             # status svg (za nonrenewed detekciju)
-            posted_svg = sec.select_one('.AdItem_postedStatus__4y6Ca svg')
-            nonrenewed = False
-            if posted_svg:
-                # original logic: svg.get('fill') == 'none' => nonrenewed
-                fill = (posted_svg.get('fill') or "").strip().lower()
-                if fill == "none":
-                    nonrenewed = True
-
-            # datum: 'danas' ili 'juče'/'juce'
             status_block = sec.select_one('p:has(svg)')
             date_text = status_block.get_text(" ", strip=True).lower() if status_block else ""
+
+            nonrenewed = False
+            if status_block:
+                svg = status_block.select_one('svg')
+                if svg:
+                    fill = (svg.get('fill') or "").strip().lower()
+                    if fill == "none":
+                        nonrenewed = True
+
+            # datum: 'danas' ili 'juče'/'juce'
             date_ok = False
             if date_text:
                 if "danas" in date_text:
@@ -194,7 +195,7 @@ def name_match(ad, mode):
     if mode == "SIZES1":
         return any(s in text for s in SIZES1)
     if mode == "A9PLUS":
-        return any(k in text for k in A9_KEYWORDS)
+        return any(k in text for k in A9PLUS)
     return True
 
 
@@ -308,7 +309,7 @@ def main():
             log("PARSED ADS:", len(ads))
 
             # keep only nonrenewed, matching name filter, AND posted danas/juče
-            ads = [a for a in ads if a.get("nonrenewed") and a.get("date_ok")]
+            ads = [a for a in ads if a.get("date_ok")]
             ads = [a for a in ads if name_match(a, mode)]
 
             current_links = [a["link"] for a in ads]
@@ -387,6 +388,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
