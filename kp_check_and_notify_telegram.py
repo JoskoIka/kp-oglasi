@@ -126,8 +126,8 @@ def parse_ads_from_html(html):
                     nonrenewed = True
 
             # datum: 'danas' ili 'juče'/'juce'
-            date_tag = sec.select_one('.AdItem_postedStatus__4y6Ca p')
-            date_text = date_tag.get_text(strip=True).lower() if date_tag else ""
+            status_block = sec.select_one('p:has(svg)')
+            date_text = status_block.get_text(" ", strip=True).lower() if status_block else ""
             date_ok = False
             if date_text:
                 if "danas" in date_text:
