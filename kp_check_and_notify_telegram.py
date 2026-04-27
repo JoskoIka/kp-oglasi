@@ -302,10 +302,10 @@ def main():
         try:
             # fetch html (ignore JSON-LD itemlist)
             html = fetch_html(url)
-            log("HTML SAMPLE:")
-            log(html[:1000])
-            # parse ads from HTML first page
+
+            log("RAW HTML SIZE:", len(html))
             ads = parse_ads_from_html(html)
+            log("PARSED ADS:", len(ads))
 
             # keep only nonrenewed, matching name filter, AND posted danas/juče
             ads = [a for a in ads if a.get("nonrenewed") and a.get("date_ok")]
