@@ -91,6 +91,7 @@ def parse_ads_from_html(html):
             a = sec.select_one('a[href]')
             if not a:
                 continue
+
             href = a.get('href', '')
             link = urljoin("https://www.kupujemprodajem.com", href)
             static = extract_static_part(link)
@@ -115,15 +116,16 @@ def parse_ads_from_html(html):
             price_tag = sec.select_one('.AdItem_price__VZ_at')
             price = price_tag.get_text(" ", strip=True) if price_tag else ""
 
-            # status + datum iz istog <p> bloka koji sadrži ikonicu
+            # status + datum: tražimo <p> koji ima svg i tekst "danas" ili "juče/juce"
             status_block = None
+            date_text = ""
+
             for p in sec.find_all("p"):
                 txt = p.get_text(" ", strip=True).lower()
-                if "danas" in txt or "juče" in txt or "juce" in txt:
+                if ("danas" in txt or "juče" in txt or "juce" in txt) and p.find("svg"):
                     status_block = p
+                    date_text = txt
                     break
-
-            date_text = status_block.get_text(" ", strip=True).lower() if status_block else ""
 
             nonrenewed = False
             if status_block:
