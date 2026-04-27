@@ -86,7 +86,7 @@ def parse_ads_from_html(html):
     """
     soup = BeautifulSoup(html, "html.parser")
     out = []
-    for sec in soup.select('section[class*="AdItem_adOuterHolder"]'):
+    for sec in soup.select('article'):
         try:
             a = sec.select_one('a[href]')
             if not a:
