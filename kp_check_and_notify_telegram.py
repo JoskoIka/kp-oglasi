@@ -41,7 +41,7 @@ STATE_FILE = os.path.join(DATA_DIR, ".kp_state.json")
 SEEN_FILE = os.path.join(DATA_DIR, "seen_base.txt")
 
 # base capacity logic
-SEEN_TRIM_THRESHOLD = 1000  # kada dođemo do ovoga ili više -> trim
+SEEN_TRIM_THRESHOLD = 1000
 SEEN_MAX = 1100
 SEEN_KEEP = 300
 
@@ -82,7 +82,7 @@ def parse_ads_from_html(html):
     Vraća listu dictova sa poljima:
       link, title, desc, price, nonrenewed, date_ok, _static
     date_ok = True samo ako pise 'danas' ili 'juče'/'juce' u status bloku.
-    nonrenewed = True ako je svg fill == "none" (kao u originalnoj verziji).
+    nonrenewed = True ako je svg fill == "none".
     """
     soup = BeautifulSoup(html, "html.parser")
     out = []
@@ -116,30 +116,29 @@ def parse_ads_from_html(html):
             price_tag = sec.select_one('.AdItem_price__VZ_at')
             price = price_tag.get_text(" ", strip=True) if price_tag else ""
 
-            # status + datum: tražimo <p> koji ima svg i tekst "danas" ili "juče/juce"
+            # status + datum: tražimo <p> koji u sebi ima svg i tekst "danas" ili "juče/juce"
             status_block = None
-            date_text = ""
+            status_html = ""
+            status_text = ""
 
             for p in sec.find_all("p"):
-                txt = p.get_text(" ", strip=True).lower()
-                if ("danas" in txt or "juče" in txt or "juce" in txt) and p.find("svg"):
+                p_html = str(p).lower()
+                p_text = p.get_text(" ", strip=True).lower()
+                if "<svg" in p_html and ("danas" in p_text or "juče" in p_text or "juce" in p_text):
                     status_block = p
-                    date_text = txt
+                    status_html = p_html
+                    status_text = p_text
                     break
 
             nonrenewed = False
-            if status_block:
-                svg = status_block.select_one('svg')
-                if svg:
-                    fill = (svg.get('fill') or "").strip().lower()
-                    if fill == "none":
-                        nonrenewed = True
+            if status_block and 'fill="none"' in status_html:
+                nonrenewed = True
 
             date_ok = False
-            if date_text:
-                if "danas" in date_text:
+            if status_text:
+                if "danas" in status_text:
                     date_ok = True
-                elif "juče" in date_text or "juce" in date_text:
+                elif "juče" in status_text or "juce" in status_text:
                     date_ok = True
 
             out.append({
@@ -290,11 +289,11 @@ def main():
     if not isinstance(state, dict):
         state = {}
 
-    seen_list = load_seen()  # newest first
+    seen_list = load_seen()
     seen_set = set(seen_list)
 
-    all_new_ads = {}  # slug -> list of ad dicts (new only)
-    new_state = {}    # slug -> current links (to be written)
+    all_new_ads = {}
+    new_state = {}
 
     for cfg in SEARCHES:
         url = cfg["url"]
