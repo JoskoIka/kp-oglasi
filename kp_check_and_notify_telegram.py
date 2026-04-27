@@ -82,7 +82,7 @@ def parse_ads_from_html(html):
     Vraća listu dictova sa poljima:
       link, title, desc, price, nonrenewed, date_ok, _static
     date_ok = True samo ako pise 'danas' ili 'juče'/'juce' u status bloku.
-    nonrenewed = True ako je svg fill == "none".
+    nonrenewed = True ako je u pitanju potpuno nov oglas (ne obnovljen).
     """
     soup = BeautifulSoup(html, "html.parser")
     out = []
@@ -123,18 +123,31 @@ def parse_ads_from_html(html):
                 if price_tag:
                     price = price_tag
 
-            # status + datum: uzmi baš postedStatus blok
-            status_block = sec.select_one('div[class*="postedStatus"] p')
-
-            date_text = status_block.get_text(" ", strip=True).lower() if status_block else ""
+            # status + datum: hvatamo glavni kontejner da izbegnemo greške sa P tagom
+            status_container = sec.select_one('div[class*="postedStatus"]')
+            date_text = status_container.get_text(" ", strip=True).lower() if status_container else ""
 
             nonrenewed = False
-            if status_block:
-                svg = status_block.select_one("svg")
+            if status_container:
+                svg = status_container.select_one("svg")
                 if svg:
+                    # Kombinovana provera: atributi + same putanje (neprobojno za CSS promene)
                     fill = (svg.get("fill") or "").strip().lower()
-                    if fill == "none":
+                    stroke = (svg.get("stroke") or "").strip().lower()
+                    
+                    if fill == "none" or (stroke and stroke != "none"):
                         nonrenewed = True
+                    
+                    # Provera po obliku SVG ikone
+                    for p in svg.find_all("path"):
+                        d = p.get("d", "")
+                        # Prepoznaje "sat" ikonu (nov oglas)
+                        if "M7.5 7.5" in d or "M8 15.5" in d:
+                            nonrenewed = True
+                        # Prepoznaje "strelice" ikonu (obnovljen oglas)
+                        if "M12.5907" in d or "M3.40937" in d:
+                            nonrenewed = False
+                            break
 
             date_ok = False
             if date_text:
