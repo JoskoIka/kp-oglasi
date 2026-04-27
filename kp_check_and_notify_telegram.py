@@ -302,6 +302,8 @@ def main():
         try:
             # fetch html (ignore JSON-LD itemlist)
             html = fetch_html(url)
+            log("HTML SAMPLE:")
+            log(html[:1000])
             # parse ads from HTML first page
             ads = parse_ads_from_html(html)
 
