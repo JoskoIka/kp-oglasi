@@ -14,16 +14,16 @@ from bs4 import BeautifulSoup
 SEARCHES = [
     {"url": "https://www.kupujemprodajem.com/audio/risiveri-surround/pretraga?categoryId=1&groupId=651&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
     {"url": "https://www.kupujemprodajem.com/audio/risiveri-stereo/pretraga?categoryId=1&groupId=469&priceFrom=50&priceTo=160&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
-    {"url": "https://www.kupujemprodajem.com/audio/pojacala/pretraga?categoryId=1&groupId=117&priceFrom=50&priceTo=200&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},   
+    {"url": "https://www.kupujemprodajem.com/audio/pojacala/pretraga?categoryId=1&groupId=117&priceFrom=50&priceTo=200&currency=eur&condition=used&hasPrice=yes&order=posted%20desc&ignoreUserId=no", "name_filter": None},
 ]
 
 # name-filter keyword lists
-SIZES = ["40","42","43","46","47","48","49","50","55","58","60","65","4k","ultra hd","uhd","3840"]
-SIZES1 = ["48","49","50","55","58","60","65","4k","ultra hd","uhd","3840"]
+SIZES = ["40", "42", "43", "46", "47", "48", "49", "50", "55", "58", "60", "65", "4k", "ultra hd", "uhd", "3840"]
+SIZES1 = ["48", "49", "50", "55", "58", "60", "65", "4k", "ultra hd", "uhd", "3840"]
 A9PLUS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
 # Exclude keywords for the SIZES/SIZES1 searches (ads containing any of these in title/desc will NOT be notified)
-EXCLUDE_SIZES = ["akcija","fox","vox","vivax","tesla",'27"','27 inca','27inca','27 inča','27inča','32"','32 inca','32inca','32 inča','32inča']
+EXCLUDE_SIZES = ["akcija", "fox", "vox", "vivax", "tesla", '27"', '27 inca', '27inca', '27 inča', '27inča', '32"', '32 inca', '32inca', '32 inča', '32inča']
 
 # realistic browser UA + headers to reduce server differences vs real browser
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -91,7 +91,7 @@ def parse_ads_from_html(html):
             a = sec.select_one('a[href]')
             if not a:
                 continue
-            href = a.get('href','')
+            href = a.get('href', '')
             link = urljoin("https://www.kupujemprodajem.com", href)
             static = extract_static_part(link)
 
@@ -103,7 +103,6 @@ def parse_ads_from_html(html):
             if info_holders:
                 for ih in info_holders:
                     for p in ih.find_all('p', recursive=False):
-                        # preskoci svg (ikonice) u tekstu
                         if p.find('svg'):
                             continue
                         txt = p.get_text(strip=True)
@@ -116,8 +115,14 @@ def parse_ads_from_html(html):
             price_tag = sec.select_one('.AdItem_price__VZ_at')
             price = price_tag.get_text(" ", strip=True) if price_tag else ""
 
-            # status svg (za nonrenewed detekciju)
-            status_block = sec.select_one('p:has(svg)')
+            # status + datum iz istog <p> bloka koji sadrži ikonicu
+            status_block = None
+            for p in sec.find_all("p"):
+                txt = p.get_text(" ", strip=True).lower()
+                if "danas" in txt or "juče" in txt or "juce" in txt:
+                    status_block = p
+                    break
+
             date_text = status_block.get_text(" ", strip=True).lower() if status_block else ""
 
             nonrenewed = False
@@ -128,7 +133,6 @@ def parse_ads_from_html(html):
                     if fill == "none":
                         nonrenewed = True
 
-            # datum: 'danas' ili 'juče'/'juce'
             date_ok = False
             if date_text:
                 if "danas" in date_text:
@@ -160,34 +164,30 @@ def extract_static_part(link):
         p = urlparse(link)
         path = p.path.strip('/')
         parts = path.split('/')
-        # naći index 'oglas'
         if 'oglas' in parts:
             idx = parts.index('oglas')
             if idx >= 1 and idx + 1 < len(parts):
-                slug = parts[idx-1]
-                oid = parts[idx+1]
+                slug = parts[idx - 1]
+                oid = parts[idx + 1]
                 return f"{slug}/oglas/{oid}"
-        # fallback: uzmi zadnja 2 segmenta
         if len(parts) >= 2:
             return "/".join(parts[-2:])
         return path
     except Exception:
-        return link.split('?',1)[0]
+        return link.split('?', 1)[0]
 
 
 def name_match(ad, mode):
-    """Proverava da li oglas prolazi name_filter.
+    """
+    Proverava da li oglas prolazi name_filter.
     Za SIZES i SIZES1: prvo isključimo oglase koji sadrže EXCLUDE_SIZES.
     Nakon toga vraćamo True samo ako sadrže neku od odobrenih veličina/ključeva.
     """
-    text = (ad.get("title","") + " " + ad.get("desc",""))
-    text = text.lower()
+    text = (ad.get("title", "") + " " + ad.get("desc", "")).lower()
 
-    # ako je SIZES ili SIZES1 -> prvo proverimo exclude listu
     if mode in ("SIZES", "SIZES1"):
         for ex in EXCLUDE_SIZES:
             if ex in text:
-                # nalazimo isključeni termin -> oglas se IGNORIŠE
                 return False
 
     if mode == "SIZES":
@@ -220,7 +220,7 @@ def load_seen():
         try:
             with open(SEEN_FILE, "r", encoding="utf-8") as f:
                 lines = [l.strip() for l in f.readlines() if l.strip()]
-                return lines  # newest at index 0 expected
+                return lines
         except Exception as e:
             log("Seen load error:", e)
             return []
@@ -230,7 +230,6 @@ def load_seen():
 def write_seen(seen_list):
     try:
         with open(SEEN_FILE, "w", encoding="utf-8") as f:
-            # newest first
             for s in seen_list:
                 f.write(s + "\n")
     except Exception as e:
@@ -238,19 +237,19 @@ def write_seen(seen_list):
 
 
 def git_pull():
-    subprocess.run(["git","config","user.name","github-actions[bot]"], check=False)
-    subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"], check=False)
-    res = subprocess.run(["git","pull","--rebase","origin","main"], check=False)
+    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=False)
+    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=False)
+    res = subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
     return res.returncode == 0
 
 
 def git_commit_and_push(files_to_add):
-    for attempt in range(1, GIT_RETRY+1):
+    for attempt in range(1, GIT_RETRY + 1):
         try:
-            subprocess.run(["git","add"] + files_to_add, check=False)
-            subprocess.run(["git","commit","-m","kp: update state/seen [ci skip]"], check=False)
-            subprocess.run(["git","pull","--rebase","origin","main"], check=False)
-            res = subprocess.run(["git","push","origin","main"], check=False)
+            subprocess.run(["git", "add"] + files_to_add, check=False)
+            subprocess.run(["git", "commit", "-m", "kp: update state/seen [ci skip]"], check=False)
+            subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
+            res = subprocess.run(["git", "push", "origin", "main"], check=False)
             if res.returncode == 0:
                 log("git push succeeded")
                 return True
@@ -301,20 +300,17 @@ def main():
         slug = safe_slug(url)
         log("Processing", slug)
         try:
-            # fetch html (ignore JSON-LD itemlist)
             html = fetch_html(url)
 
             log("RAW HTML SIZE:", len(html))
             ads = parse_ads_from_html(html)
             log("PARSED ADS:", len(ads))
 
-            # keep only nonrenewed, matching name filter, AND posted danas/juče
-            ads = [a for a in ads if a.get("date_ok")]
+            ads = [a for a in ads if a.get("nonrenewed") and a.get("date_ok")]
             ads = [a for a in ads if name_match(a, mode)]
 
             current_links = [a["link"] for a in ads]
 
-            # determine new by static part vs seen_set
             new_ads = []
             for a in ads:
                 static = a.get("_static") or extract_static_part(a["link"])
@@ -330,38 +326,29 @@ def main():
             all_new_ads[slug] = []
             new_state[slug] = state.get(slug, [])
 
-    # Update seen_list in memory by inserting statics of new ads (newest first),
-    # but DO NOT send notifications yet. We'll write files and push; only after successful push we send.
-    # We must keep insertion order: newest first. Also avoid duplicates.
     for slug, new_ads in all_new_ads.items():
         for a in new_ads:
             static = a.get("_static")
             if not static:
                 continue
-            # remove if already exists (shouldn't happen because checked earlier, but safe)
             if static in seen_list:
                 seen_list.remove(static)
-            # insert at front
             seen_list.insert(0, static)
             seen_set.add(static)
 
-    # Trim seen_list if passes threshold (keep newest SEEN_KEEP)
     if len(seen_list) >= SEEN_TRIM_THRESHOLD or len(seen_list) > SEEN_MAX:
         log(f"Seen list length {len(seen_list)} >= threshold {SEEN_TRIM_THRESHOLD}/{SEEN_MAX}. Trimming to {SEEN_KEEP}.")
         seen_list = seen_list[:SEEN_KEEP]
         seen_set = set(seen_list)
 
-    # Write new_state and seen_list to disk
     write_state(new_state)
     write_seen(seen_list)
 
-    # Commit & push both STATE_FILE and SEEN_FILE. Only if push succeeds -> we will send notifications
     files_to_push = [STATE_FILE, SEEN_FILE]
     if not git_commit_and_push(files_to_push):
         log("Aborting notifications because git push failed. This avoids duplicate notifications.")
         return
 
-    # push succeeded -> send notifications for each search that has new ads
     total_new = 0
     for cfg in SEARCHES:
         slug = safe_slug(cfg["url"])
@@ -369,16 +356,13 @@ def main():
         if not new_ads:
             continue
         total_new += len(new_ads)
-        # build single message for this link (numeration from 1)
         lines = []
         for i, a in enumerate(new_ads, 1):
-            # each ad block: numbered, title, desc, price, link
             block = f"{i}. {a['title']}\n{a['desc']}\n{a['price']}\n{a['link']}"
             lines.append(block)
         message = "\n\n".join(lines).strip()
         ok = send_telegram(message)
         if ok:
-            # send separator message exactly as requested
             send_telegram("NOVI OGLASI\n.\n.")
         else:
             log("Warning: telegram send failed for", slug)
