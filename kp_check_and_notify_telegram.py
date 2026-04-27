@@ -18,12 +18,12 @@ SEARCHES = [
 ]
 
 # name-filter keyword lists
-SIZES = ["40", "42", "43", "46", "47", "48", "49", "50", "55", "58", "60", "65", "4k", "ultra hd", "uhd", "3840"]
-SIZES1 = ["48", "49", "50", "55", "58", "60", "65", "4k", "ultra hd", "uhd", "3840"]
+SIZES = ["40","42","43","46","47","48","49","50","55","58","60","65","4k","ultra hd","uhd","3840"]
+SIZES1 = ["48","49","50","55","58","60","65","4k","ultra hd","uhd","3840"]
 A9PLUS = ["a9+", "a9 +", "a9plus", "a9 plus"]
 
 # Exclude keywords for the SIZES/SIZES1 searches (ads containing any of these in title/desc will NOT be notified)
-EXCLUDE_SIZES = ["akcija", "fox", "vox", "vivax", "tesla", '27"', '27 inca', '27inca', '27 inča', '27inča', '32"', '32 inca', '32inca', '32 inča', '32inča']
+EXCLUDE_SIZES = ["akcija","fox","vox","vivax","tesla",'27"','27 inca','27inca','27 inča','27inča','32"','32 inca','32inca','32 inča','32inča']
 
 # realistic browser UA + headers to reduce server differences vs real browser
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -41,7 +41,7 @@ STATE_FILE = os.path.join(DATA_DIR, ".kp_state.json")
 SEEN_FILE = os.path.join(DATA_DIR, "seen_base.txt")
 
 # base capacity logic
-SEEN_TRIM_THRESHOLD = 1000
+SEEN_TRIM_THRESHOLD = 1000  # kada dođemo do ovoga ili više -> trim
 SEEN_MAX = 1100
 SEEN_KEEP = 300
 
@@ -86,6 +86,7 @@ def parse_ads_from_html(html):
     """
     soup = BeautifulSoup(html, "html.parser")
     out = []
+
     for sec in soup.select('article'):
         try:
             a = sec.select_one('a[href]')
@@ -116,23 +117,15 @@ def parse_ads_from_html(html):
             price_tag = sec.select_one('.AdItem_price__VZ_at')
             price = price_tag.get_text(" ", strip=True) if price_tag else ""
 
-            # status + datum: tražimo <p> koji u sebi ima svg i tekst "danas" ili "juče/juce"
-            status_block = None
-            status_html = ""
+            # status + datum: uzmi p koji ima tekst "danas" ili "juče/juce"
             status_text = ""
-
+            status_html = ""
             for p in sec.find_all("p"):
-                p_html = str(p).lower()
-                p_text = p.get_text(" ", strip=True).lower()
-                if "<svg" in p_html and ("danas" in p_text or "juče" in p_text or "juce" in p_text):
-                    status_block = p
-                    status_html = p_html
-                    status_text = p_text
+                txt = p.get_text(" ", strip=True).lower()
+                if "danas" in txt or "juče" in txt or "juce" in txt:
+                    status_text = txt
+                    status_html = str(p).lower()
                     break
-
-            nonrenewed = False
-            if status_block and 'fill="none"' in status_html:
-                nonrenewed = True
 
             date_ok = False
             if status_text:
@@ -140,6 +133,10 @@ def parse_ads_from_html(html):
                     date_ok = True
                 elif "juče" in status_text or "juce" in status_text:
                     date_ok = True
+
+            nonrenewed = False
+            if status_html and 'fill="none"' in status_html:
+                nonrenewed = True
 
             out.append({
                 "link": link,
@@ -152,6 +149,7 @@ def parse_ads_from_html(html):
             })
         except Exception:
             continue
+
     return out
 
 
@@ -168,23 +166,20 @@ def extract_static_part(link):
         if 'oglas' in parts:
             idx = parts.index('oglas')
             if idx >= 1 and idx + 1 < len(parts):
-                slug = parts[idx - 1]
-                oid = parts[idx + 1]
+                slug = parts[idx-1]
+                oid = parts[idx+1]
                 return f"{slug}/oglas/{oid}"
         if len(parts) >= 2:
             return "/".join(parts[-2:])
         return path
     except Exception:
-        return link.split('?', 1)[0]
+        return link.split('?',1)[0]
 
 
 def name_match(ad, mode):
-    """
-    Proverava da li oglas prolazi name_filter.
-    Za SIZES i SIZES1: prvo isključimo oglase koji sadrže EXCLUDE_SIZES.
-    Nakon toga vraćamo True samo ako sadrže neku od odobrenih veličina/ključeva.
-    """
-    text = (ad.get("title", "") + " " + ad.get("desc", "")).lower()
+    """Proverava da li oglas prolazi name_filter."""
+    text = (ad.get("title","") + " " + ad.get("desc",""))
+    text = text.lower()
 
     if mode in ("SIZES", "SIZES1"):
         for ex in EXCLUDE_SIZES:
@@ -221,7 +216,7 @@ def load_seen():
         try:
             with open(SEEN_FILE, "r", encoding="utf-8") as f:
                 lines = [l.strip() for l in f.readlines() if l.strip()]
-                return lines
+                return lines  # newest at index 0 expected
         except Exception as e:
             log("Seen load error:", e)
             return []
@@ -238,19 +233,19 @@ def write_seen(seen_list):
 
 
 def git_pull():
-    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=False)
-    subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=False)
-    res = subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
+    subprocess.run(["git","config","user.name","github-actions[bot]"], check=False)
+    subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"], check=False)
+    res = subprocess.run(["git","pull","--rebase","origin","main"], check=False)
     return res.returncode == 0
 
 
 def git_commit_and_push(files_to_add):
-    for attempt in range(1, GIT_RETRY + 1):
+    for attempt in range(1, GIT_RETRY+1):
         try:
-            subprocess.run(["git", "add"] + files_to_add, check=False)
-            subprocess.run(["git", "commit", "-m", "kp: update state/seen [ci skip]"], check=False)
-            subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=False)
-            res = subprocess.run(["git", "push", "origin", "main"], check=False)
+            subprocess.run(["git","add"] + files_to_add, check=False)
+            subprocess.run(["git","commit","-m","kp: update state/seen [ci skip]"], check=False)
+            subprocess.run(["git","pull","--rebase","origin","main"], check=False)
+            res = subprocess.run(["git","push","origin","main"], check=False)
             if res.returncode == 0:
                 log("git push succeeded")
                 return True
@@ -289,7 +284,7 @@ def main():
     if not isinstance(state, dict):
         state = {}
 
-    seen_list = load_seen()
+    seen_list = load_seen()  # newest first
     seen_set = set(seen_list)
 
     all_new_ads = {}
