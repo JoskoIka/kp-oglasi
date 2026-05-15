@@ -1,3 +1,10 @@
+yamaha-dsp-a-595/oglas/192201380
+akai-aa-39/oglas/192201454
+pioneer-x-hm-15/oglas/192201485
+sony-str-de-405/oglas/192201508
+sony-str-de-315/oglas/192201542
+yamaha-rx-v363-5-1-channel-av-dts-hdmi-5-x-100w/oglas/192201362
+onkyo-tx-sr606-7-1-channel-av-dts-hdmi-5-x-90-w/oglas/192201388
 sansui-au-x-201/oglas/192201352
 sony-str-de598-av-stereo-surround-receiver-5-x-90-w/oglas/192201346
 technics-sa-dx940/oglas/192200505
