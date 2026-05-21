@@ -1,3 +1,5 @@
+onkyo-tx-sr307/oglas/192331633
+sony-str-de598/oglas/192331683
 yamaha-natural-sound-av-receiver-rx-v1300rds/oglas/192330880
 sony-vision-touch-ta-v810g/oglas/192330864
 nad-c-266bee-daljinski/oglas/192329185
