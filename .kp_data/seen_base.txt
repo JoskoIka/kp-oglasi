@@ -1,3 +1,6 @@
+denon-dra-385rd/oglas/192764127
+kenwood-kr-v-6040/oglas/192764130
+telefunken-tr-300/oglas/192764132
 technics-su-x-860-aa-class/oglas/192763654
 sony-ta-fe-520r-denon-pma-700-prinzsound-5001/oglas/192763806
 pojacalo-cimus-cmt-180/oglas/192761005
