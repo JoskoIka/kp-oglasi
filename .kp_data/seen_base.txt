@@ -1,3 +1,4 @@
+hsr-40/oglas/192913170
 pioneer-sa-7300/oglas/192912688
 onkyo-fr-435/oglas/192912294
 onkyo-tx-sr674e-hdmi/oglas/192912201
