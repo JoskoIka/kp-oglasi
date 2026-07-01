@@ -1,3 +1,5 @@
+kenwood-kaf-1010-trait-source-direct/oglas/193314073
+sony-str-k780/oglas/193321290
 denon-avr-3802/oglas/193317711
 yamaha-htr-2064-hdmi/oglas/193317768
 technics-su-x911-st-x933/oglas/193317487
