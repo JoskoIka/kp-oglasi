@@ -1,3 +1,9 @@
+sony-str-d565/oglas/194011848
+sony-str-de445/oglas/194011851
+yamaha-rx-v367-5-1-channel/oglas/194011856
+pioneer-vsx-839rds/oglas/194011858
+pioneer-vsx-520-k/oglas/194011863
+kenwood-krf-v-5100d-dolby-digital-dts-receiver/oglas/194011865
 onkyo-tx-nr525/oglas/194011102
 kenwood-ka-1080/oglas/194010632
 ifi-zen-can/oglas/194009508
