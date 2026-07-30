@@ -1,3 +1,8 @@
+sony-ta-f3a/oglas/194129988
+marantz-pm-30/oglas/194129998
+nad-312/oglas/194130005
+jvc-ja-s310/oglas/194130014
+sony-ta-f550es/oglas/194130019
 marantz-pm-250/oglas/194129093
 av-receiver-harman-kardon-avr-130-audio-pojacalo-5-1-avr130/oglas/194129164
 rotel-ra-921/oglas/194128791
