@@ -1,3 +1,9 @@
+denon-pma-737/oglas/195209311
+denon-pma-720a/oglas/195209315
+kenwood-ka-5040r/oglas/195209320
+pioneer-sa-5500-ii-pioneer-tx-5500-ii/oglas/195209322
+technics-su-v-670-pxs-cap-aa-class/oglas/195209331
+technics-su-v-660-aa-class/oglas/195209334
 kenwood-kr-v-6040/oglas/195208933
 telefunken-tr-300/oglas/195208936
 harman-kardom-pm-655/oglas/195207277
