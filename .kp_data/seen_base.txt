@@ -1,3 +1,6 @@
+teac-a-r600/oglas/195329693
+marantz-pm-45/oglas/195329861
+sony-str-212l/oglas/195329747
 denon-avr-3802/oglas/195327449
 sherwood-al1110/oglas/195319203
 pioneer-a-302r/oglas/195323014
