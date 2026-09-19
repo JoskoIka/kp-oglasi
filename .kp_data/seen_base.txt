@@ -1,3 +1,8 @@
+kenwood-kr-2400/oglas/195598271
+arena-r-500/oglas/195598293
+superscope-r-1220l/oglas/195598458
+yamaha-rx-v-450/oglas/195598190
+yamaha-sa-cd-emx-120-rds/oglas/195598305
 harman-kardon-hk-6100/oglas/195597684
 yamaha-dsp-a595a/oglas/195597759
 yamaha-rx-v-440-rds/oglas/195597854
