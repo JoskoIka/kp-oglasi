@@ -1,3 +1,10 @@
+denon-pma-480r/oglas/195627407
+denon-pma-737/oglas/195627409
+denon-pma-720a/oglas/195627413
+pioneer-sa-5500-ii-pioneer-tx-5500-ii/oglas/195627414
+yamaha-ax-596/oglas/195627420
+technics-su-v-670-pxs-cap-aa-class/oglas/195627421
+technics-su-v-660-aa-class/oglas/195627422
 denon-pma-520ae/oglas/195627199
 kenwood-kr-v-6040/oglas/195626954
 telefunken-tr-300/oglas/195626956
