@@ -1,3 +1,10 @@
+denon-pma-480r/oglas/196266748
+denon-pma-737/oglas/196266749
+technics-su-v-470-pxs-cap-aa-class/oglas/196266753
+yamaha-ax-596/oglas/196266756
+technics-su-v-670-pxs-cap-aa-class/oglas/196266758
+technics-su-v-660-aa-class/oglas/196266764
+yamaha-ax-700/oglas/196266769
 sony-str-de-315/oglas/196266502
 telefunken-tr-300/oglas/196266504
 kenwood-kr-v8090/oglas/196264232
