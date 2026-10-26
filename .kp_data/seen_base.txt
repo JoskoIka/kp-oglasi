@@ -1,3 +1,9 @@
+denon-pma-480r/oglas/196673010
+akai-am-47/oglas/196673013
+kenwood-ka-5010/oglas/196673014
+harman-kardon-hk-6500/oglas/196673015
+technics-su-v-670-pxs-cap-aa-class/oglas/196673017
+technics-su-v-660-aa-class/oglas/196673018
 nad-c-320-bee/oglas/196672514
 sony-str-de-315/oglas/196672610
 telefunken-tr-300/oglas/196672613
