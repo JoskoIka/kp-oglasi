@@ -1,3 +1,6 @@
+sony-ta-ve800g/oglas/196807576
+kenwood-kr-v8090-daljinski/oglas/196807608
+technics-su-vz320/oglas/196807692
 technics-su-v660-class-a-a/oglas/196807502
 jvc-ax-550-super-a/oglas/196807528
 yamaha-ax-440-natural-sound/oglas/196807554
