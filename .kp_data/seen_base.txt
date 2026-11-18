@@ -1,3 +1,6 @@
+technics-su-c03/oglas/197379541
+kenwood-ka-501/oglas/197379904
+pioneer-vsx-410s/oglas/197379733
 samsung-risiver-avr-710/oglas/197377775
 yamaha-risiver/oglas/197375904
 teac-a-x1030/oglas/197374540
